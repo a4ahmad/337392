@@ -8,190 +8,123 @@
         body {
             font-family: Arial, sans-serif;
             margin: 0;
-            padding: 20px;
+            padding: 0;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
         }
         .container {
             background: white;
-            padding: 40px;
+            padding: 50px;
             border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
             text-align: center;
-            max-width: 600px;
+            max-width: 500px;
         }
-        h1 {
-            color: #333;
-            margin-bottom: 20px;
+        h1 { color: #333; margin-bottom: 20px; }
+        p { color: #666; font-size: 18px; margin-bottom: 30px; }
+        .call-button {
+            background: #22c55e;
+            color: white;
+            border: none;
+            padding: 20px 50px;
+            font-size: 24px;
+            border-radius: 60px;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(34, 197, 94, 0.4);
+            transition: all 0.3s ease;
         }
-        p {
-            color: #666;
-            font-size: 18px;
-            line-height: 1.6;
+        .call-button:hover {
+            background: #16a34a;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(34, 197, 94, 0.5);
         }
-        .note {
-            margin-top: 30px;
-            padding: 20px;
-            background: #f0f0f0;
-            border-radius: 10px;
+        .status {
+            margin-top: 20px;
             font-size: 16px;
+            color: #666;
+            min-height: 30px;
+        }
+        .hangup-button {
+            background: #ef4444;
+            margin-top: 20px;
+            padding: 15px 40px;
+            font-size: 18px;
+            display: none;
+        }
+        .hangup-button:hover {
+            background: #dc2626;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🎤 AI Voice Assistant</h1>
-        <p>Click the floating button in the bottom-right corner to start a voice conversation with our AI assistant!</p>
-        <div class="note">
-            <strong>How it works:</strong><br>
-            1. Click the phone icon in the bottom-right<br>
-            2. Allow microphone access when prompted<br>
-            3. Start speaking with the AI assistant
-        </div>
+        <p>Click the button below to start speaking with our AI assistant in real-time</p>
+        
+        <button id="callBtn" class="call-button">📞 Start Voice Call</button>
+        <button id="hangupBtn" class="call-button hangup-button">End Call</button>
+        
+        <div id="status" class="status"></div>
     </div>
 
-    <!-- Retell Web Call Widget -->
     <script type="module">
-        import { RetellWebClient } from "https://cdn.jsdelivr.net/npm/retell-client-js-sdk@2.3.0/+esm";
-
-        const PUBLIC_KEY = "public_key_5a221e71093a41c4a8a2f";
-        const AGENT_ID = "agent_7e437cea19750e2efc31a11add";
-        const N8N_WEBHOOK = "https://shiftnowai.app.n8n.cloud/webhook/create-retell-call";
-
-        // Create floating call button
-        const button = document.createElement('button');
-        button.innerHTML = '📞';
-        button.style.cssText = `
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: #667eea;
-            color: white;
-            border: none;
-            font-size: 28px;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            z-index: 9999;
-            transition: all 0.3s ease;
-        `;
-        button.onmouseover = () => button.style.transform = 'scale(1.1)';
-        button.onmouseout = () => button.style.transform = 'scale(1)';
-        document.body.appendChild(button);
-
-        // Create status indicator
-        const status = document.createElement('div');
-        status.style.cssText = `
-            position: fixed;
-            bottom: 90px;
-            right: 20px;
-            padding: 10px 20px;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-            display: none;
-            z-index: 9999;
-            font-size: 14px;
-        `;
-        document.body.appendChild(status);
-
-        const retellClient = new RetellWebClient();
-        let callActive = false;
-
-        button.addEventListener('click', async () => {
-            if (callActive) {
-                retellClient.stopCall();
-                return;
-            }
-
+        import { RetellWebClient } from 'https://esm.sh/retell-client-js-sdk@2.3.0';
+        
+        const callBtn = document.getElementById('callBtn');
+        const hangupBtn = document.getElementById('hangupBtn');
+        const status = document.getElementById('status');
+        
+        const client = new RetellWebClient();
+        
+        callBtn.onclick = async () => {
             try {
-                button.disabled = true;
+                callBtn.disabled = true;
                 status.textContent = 'Connecting...';
-                status.style.display = 'block';
-
-                const response = await fetch(N8N_WEBHOOK, {
+                
+                const res = await fetch('https://shiftnowai.app.n8n.cloud/webhook/create-retell-call', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        agent_id: AGENT_ID,
-                        metadata: { source: 'web_widget' }
-                    })
+                    headers: { 'Content-Type': 'application/json' }
                 });
-
-                const data = await response.json();
-
-                await retellClient.startCall({
+                
+                const data = await res.json();
+                
+                await client.startCall({
                     accessToken: data.access_token,
-                    sampleRate: 24000,
-                    captureDeviceId: "default",
-                    playbackDeviceId: "default"
+                    sampleRate: 24000
                 });
-
-            } catch (error) {
-                console.error('Error:', error);
-                status.textContent = 'Failed to connect';
-                status.style.background = '#ff4444';
-                status.style.color = 'white';
-                button.disabled = false;
-                setTimeout(() => status.style.display = 'none', 3000);
+                
+            } catch (err) {
+                status.textContent = 'Error: ' + err.message;
+                status.style.color = '#ef4444';
+                callBtn.disabled = false;
             }
+        };
+        
+        hangupBtn.onclick = () => client.stopCall();
+        
+        client.on('call_started', () => {
+            status.textContent = '✅ Connected - Speak now!';
+            status.style.color = '#22c55e';
+            callBtn.style.display = 'none';
+            hangupBtn.style.display = 'inline-block';
         });
-
-        retellClient.on("call_started", () => {
-            callActive = true;
-            button.innerHTML = '📞';
-            button.style.background = '#22c55e';
-            status.textContent = 'Connected - Speak now!';
-            status.style.background = '#22c55e';
-            status.style.color = 'white';
-            button.disabled = false;
-        });
-
-        retellClient.on("call_ended", () => {
-            callActive = false;
-            button.innerHTML = '📞';
-            button.style.background = '#667eea';
+        
+        client.on('call_ended', () => {
             status.textContent = 'Call ended';
-            status.style.background = 'white';
-            status.style.color = '#333';
-            button.disabled = false;
-            setTimeout(() => status.style.display = 'none', 3000);
+            status.style.color = '#666';
+            callBtn.style.display = 'inline-block';
+            callBtn.disabled = false;
+            hangupBtn.style.display = 'none';
         });
-
-        retellClient.on("agent_start_talking", () => {
-            button.style.animation = 'pulse 1s infinite';
+        
+        client.on('error', (err) => {
+            status.textContent = 'Error: ' + err.message;
+            status.style.color = '#ef4444';
+            callBtn.disabled = false;
         });
-
-        retellClient.on("agent_stop_talking", () => {
-            button.style.animation = 'none';
-        });
-
-        retellClient.on("error", (error) => {
-            console.error('Call error:', error);
-            callActive = false;
-            button.disabled = false;
-            button.style.background = '#667eea';
-            status.textContent = 'Error: ' + (error.message || 'Unknown');
-            status.style.background = '#ff4444';
-            status.style.color = 'white';
-            setTimeout(() => status.style.display = 'none', 5000);
-        });
-
-        // Add pulse animation
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes pulse {
-                0%, 100% { transform: scale(1); }
-                50% { transform: scale(1.1); }
-            }
-        `;
-        document.head.appendChild(style);
     </script>
 </body>
 </html>
