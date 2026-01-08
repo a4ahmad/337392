@@ -39,13 +39,11 @@
         .call-button:hover {
             background: #16a34a;
             transform: translateY(-3px);
-            box-shadow: 0 8px 30px rgba(34, 197, 94, 0.5);
         }
         .status {
             margin-top: 20px;
             font-size: 16px;
             color: #666;
-            min-height: 30px;
         }
         .hangup-button {
             background: #ef4444;
@@ -54,15 +52,12 @@
             font-size: 18px;
             display: none;
         }
-        .hangup-button:hover {
-            background: #dc2626;
-        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🎤 AI Voice Assistant</h1>
-        <p>Click the button below to start speaking with our AI assistant in real-time</p>
+        <p>Click below to start speaking with our AI</p>
         
         <button id="callBtn" class="call-button">📞 Start Voice Call</button>
         <button id="hangupBtn" class="call-button hangup-button">End Call</button>
@@ -70,9 +65,8 @@
         <div id="status" class="status"></div>
     </div>
 
-    <script type="module">
-        import { RetellWebClient } from 'https://esm.sh/retell-client-js-sdk@2.3.0';
-        
+    <script src="https://cdn.jsdelivr.net/npm/retell-client-js-sdk@2.0.7/dist/retell-client-js-sdk.min.js"></script>
+    <script>
         const callBtn = document.getElementById('callBtn');
         const hangupBtn = document.getElementById('hangupBtn');
         const status = document.getElementById('status');
@@ -85,8 +79,7 @@
                 status.textContent = 'Connecting...';
                 
                 const res = await fetch('https://shiftnowai.app.n8n.cloud/webhook/create-retell-call', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
+                    method: 'POST'
                 });
                 
                 const data = await res.json();
@@ -98,7 +91,6 @@
                 
             } catch (err) {
                 status.textContent = 'Error: ' + err.message;
-                status.style.color = '#ef4444';
                 callBtn.disabled = false;
             }
         };
@@ -106,15 +98,13 @@
         hangupBtn.onclick = () => client.stopCall();
         
         client.on('call_started', () => {
-            status.textContent = '✅ Connected - Speak now!';
-            status.style.color = '#22c55e';
+            status.textContent = '✅ Connected!';
             callBtn.style.display = 'none';
             hangupBtn.style.display = 'inline-block';
         });
         
         client.on('call_ended', () => {
             status.textContent = 'Call ended';
-            status.style.color = '#666';
             callBtn.style.display = 'inline-block';
             callBtn.disabled = false;
             hangupBtn.style.display = 'none';
@@ -122,7 +112,6 @@
         
         client.on('error', (err) => {
             status.textContent = 'Error: ' + err.message;
-            status.style.color = '#ef4444';
             callBtn.disabled = false;
         });
     </script>
